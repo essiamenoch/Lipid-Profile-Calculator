@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Lipid Profile Analyzer</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #eef2f7;
+  display: flex;
+  justify-content: center;
+  padding-top: 40px;
+}
+
+.container {
+  background: white;
+  padding: 20px;
+  width: 350px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #084298;
+}
+
+#output {
+  margin-top: 15px;
+  font-size: 14px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+  <h2>Lipid Profile Analyzer</h2>
+
+  <input type="text" id="name" placeholder="Patient Name">
+
+  <label>Total Cholesterol (mmol/L)</label>
+  <input type="number" id="tc">
+
+  <label>HDL (mmol/L)</label>
+  <input type="number" id="hdl">
+
+  <label>Triglycerides (mmol/L)</label>
+  <input type="number" id="tg">
+
+  <button onclick="analyze()">Analyze</button>
+
+  <div id="output"></div>
+
+  <h3>Saved Results</h3>
+  <ul id="history"></ul>
+</div>
+
+<script>
+function analyze() {
+  let name = document.getElementById("name").value;
+  let tc = parseFloat(document.getElementById("tc").value);
+  let hdl = parseFloat(document.getElementById("hdl").value);
+  let tg = parseFloat(document.getElementById("tg").value);
+
+  if (!name || isNaN(tc) || isNaN(hdl) || isNaN(tg)) {
+    document.getElementById("output").innerHTML = "Please fill all fields.";
+    return;
+  }
+
+  if (tg >= 4.5) {
+    document.getElementById("output").innerHTML =
+      "Triglycerides too high for LDL calculation (≥ 4.5 mmol/L). Lab method required.";
+    return;
+  }
+
+  let ldl = tc - hdl - (tg / 2.2);
+  let ratio = tc / hdl;
+
+  let riskLevel = "";
+  if (ldl < 2.6) riskLevel = "Optimal";
+  else if (ldl < 3.4) riskLevel = "Near Optimal";
+  else if (ldl < 4.1) riskLevel = "Borderline High";
+  else if (ldl < 4.9) riskLevel = "High";
+  else riskLevel = "Very High";
+
+  let ratioRisk = "";
+  if (ratio < 3.5) ratioRisk = "Low Risk";
+  else if (ratio <= 5) ratioRisk = "Moderate Risk";
+  else ratioRisk = "High Risk";
+
+  let resultText = `
+    <b>LDL:</b> ${ldl.toFixed(2)} mmol/L <br>
+    <b>LDL Risk:</b> ${riskLevel} <br>
+    <b>TC/HDL Ratio:</b> ${ratio.toFixed(2)} <br>
+    <b>Coronary Risk:</b> ${ratioRisk}
+  `;
+
+  document.getElementById("output").innerHTML = resultText;
+
+  saveResult(name, resultText);
+}
+
+function saveResult(name, result) {
+  let history = JSON.parse(localStorage.getItem("lipidHistory")) || [];
+  history.push({ name: name, result: result });
+  localStorage.setItem("lipidHistory", JSON.stringify(history));
+  displayHistory();
+}
+
+function displayHistory() {
+  let history = JSON.parse(localStorage.getItem("lipidHistory")) || [];
+  let historyList = document.getElementById("history");
+  historyList.innerHTML = "";
+  history.forEach(item => {
+    let li = document.createElement("li");
+    li.innerHTML = `<b>${item.name}</b><br>${item.result}`;
+    historyList.appendChild(li);
+  });
+}
+
+displayHistory();
+</script>
+
+</body>
+</html>
