@@ -1,26 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Lipid Profile Analyzer</title>
+<title>MLS Essiam Clinical Chemistry Results Calculator</title>
 
 <style>
 body {
   font-family: Arial;
   background: #eef2f7;
-  display: flex;
-  justify-content: center;
-  padding-top: 40px;
+  margin: 0;
+}
+
+.header {
+  background: #0d6efd;
+  color: white;
+  text-align: center;
+  padding: 20px;
 }
 
 .container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px;
+}
+
+.card {
   background: white;
   padding: 20px;
-  width: 350px;
+  width: 380px;
+  margin: 15px;
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-input {
+input, select {
   width: 100%;
   padding: 8px;
   margin-bottom: 10px;
@@ -29,7 +42,7 @@ input {
 button {
   width: 100%;
   padding: 10px;
-  background: #0d6efd;
+  background: #198754;
   color: white;
   border: none;
   border-radius: 6px;
@@ -37,104 +50,208 @@ button {
 }
 
 button:hover {
-  background: #084298;
+  background: #145c32;
 }
 
-#output {
+.output {
   margin-top: 15px;
   font-size: 14px;
 }
 </style>
-
 </head>
 <body>
 
+<div class="header">
+  <h1>MLS Essiam</h1>
+  <h3>Clinical Chemistry Results Calculator</h3>
+</div>
+
 <div class="container">
-  <h2>Lipid Profile Analyzer</h2>
 
-  <input type="text" id="name" placeholder="Patient Name">
+<!-- ================= LIPID PROFILE ================= -->
+<div class="card">
+<h3>Lipid Profile (mmol/L)</h3>
 
-  <label>Total Cholesterol (mmol/L)</label>
-  <input type="number" id="tc">
+<input type="number" id="tc" placeholder="Total Cholesterol">
+<input type="number" id="hdl" placeholder="HDL">
+<input type="number" id="tg" placeholder="Triglycerides">
 
-  <label>HDL (mmol/L)</label>
-  <input type="number" id="hdl">
+<button onclick="analyzeLipid()">Analyze Lipid</button>
 
-  <label>Triglycerides (mmol/L)</label>
-  <input type="number" id="tg">
+<div id="lipidOutput" class="output"></div>
+</div>
 
-  <button onclick="analyze()">Analyze</button>
+<!-- ================= LFT ================= -->
+<div class="card">
+<h3>Liver Function Test</h3>
 
-  <div id="output"></div>
+<input type="number" id="alt" placeholder="ALT (IU/L)">
+<input type="number" id="ast" placeholder="AST (IU/L)">
+<input type="number" id="alp" placeholder="ALP (IU/L)">
+<input type="number" id="totalBili" placeholder="Total Bilirubin (µmol/L)">
+<input type="number" id="directBili" placeholder="Direct Bilirubin (µmol/L)">
+<input type="number" id="albumin" placeholder="Albumin (g/L)">
+<input type="number" id="totalProtein" placeholder="Total Protein (g/L)">
 
-  <h3>Saved Results</h3>
-  <ul id="history"></ul>
+<button onclick="analyzeLFT()">Analyze LFT</button>
+
+<div id="lftOutput" class="output"></div>
+</div>
+
+<!-- ================= RFT ================= -->
+<div class="card">
+<h3>Renal Function Test (CKD-EPI 2009)</h3>
+
+<input type="number" id="creatinine" placeholder="Creatinine (µmol/L)">
+<input type="number" id="age" placeholder="Age (years)">
+
+<select id="gender">
+  <option value="">Select Gender</option>
+  <option value="male">Male</option>
+  <option value="female">Female</option>
+</select>
+
+<p><b>Race:</b> Black (Factor Applied)</p>
+
+<button onclick="calculateEGFR()">Calculate eGFR</button>
+
+<div id="rftOutput" class="output"></div>
+</div>
+
 </div>
 
 <script>
-function analyze() {
-  let name = document.getElementById("name").value;
+
+// ================= LIPID =================
+function analyzeLipid() {
+
   let tc = parseFloat(document.getElementById("tc").value);
   let hdl = parseFloat(document.getElementById("hdl").value);
   let tg = parseFloat(document.getElementById("tg").value);
 
-  if (!name || isNaN(tc) || isNaN(hdl) || isNaN(tg)) {
-    document.getElementById("output").innerHTML = "Please fill all fields.";
+  if (isNaN(tc) || isNaN(hdl) || isNaN(tg)) {
+    document.getElementById("lipidOutput").innerHTML = "Enter all lipid values.";
     return;
   }
 
   if (tg >= 4.5) {
-    document.getElementById("output").innerHTML =
-      "Triglycerides too high for LDL calculation (≥ 4.5 mmol/L). Lab method required.";
+    document.getElementById("lipidOutput").innerHTML =
+      "Triglycerides too high for LDL calculation.";
     return;
   }
 
   let ldl = tc - hdl - (tg / 2.2);
   let ratio = tc / hdl;
 
-  let riskLevel = "";
-  if (ldl < 2.6) riskLevel = "Optimal";
-  else if (ldl < 3.4) riskLevel = "Near Optimal";
-  else if (ldl < 4.1) riskLevel = "Borderline High";
-  else if (ldl < 4.9) riskLevel = "High";
-  else riskLevel = "Very High";
-
-  let ratioRisk = "";
-  if (ratio < 3.5) ratioRisk = "Low Risk";
-  else if (ratio <= 5) ratioRisk = "Moderate Risk";
-  else ratioRisk = "High Risk";
-
-  let resultText = `
-    <b>LDL:</b> ${ldl.toFixed(2)} mmol/L <br>
-    <b>LDL Risk:</b> ${riskLevel} <br>
-    <b>TC/HDL Ratio:</b> ${ratio.toFixed(2)} <br>
-    <b>Coronary Risk:</b> ${ratioRisk}
+  document.getElementById("lipidOutput").innerHTML = `
+    <b>LDL:</b> ${ldl.toFixed(2)} mmol/L<br>
+    <b>TC/HDL Ratio:</b> ${ratio.toFixed(2)}
   `;
-
-  document.getElementById("output").innerHTML = resultText;
-
-  saveResult(name, resultText);
 }
 
-function saveResult(name, result) {
-  let history = JSON.parse(localStorage.getItem("lipidHistory")) || [];
-  history.push({ name: name, result: result });
-  localStorage.setItem("lipidHistory", JSON.stringify(history));
-  displayHistory();
+
+// ================= LFT =================
+function analyzeLFT() {
+
+  let alt = parseFloat(document.getElementById("alt").value);
+  let ast = parseFloat(document.getElementById("ast").value);
+  let alp = parseFloat(document.getElementById("alp").value);
+  let totalBili = parseFloat(document.getElementById("totalBili").value);
+  let directBili = parseFloat(document.getElementById("directBili").value);
+  let albumin = parseFloat(document.getElementById("albumin").value);
+  let totalProtein = parseFloat(document.getElementById("totalProtein").value);
+
+  if (isNaN(alt) || isNaN(ast) || isNaN(alp) ||
+      isNaN(totalBili) || isNaN(directBili) ||
+      isNaN(albumin) || isNaN(totalProtein)) {
+    document.getElementById("lftOutput").innerHTML = "Enter all LFT values.";
+    return;
+  }
+
+  let indirectBili = totalBili - directBili;
+  let globulin = totalProtein - albumin;
+
+  let interpretation = "";
+
+  if (alt > 56 || ast > 40) {
+    interpretation += "Elevated transaminases – Possible hepatocellular injury.<br>";
+  }
+
+  if (alp > 147 && totalBili > 21) {
+    interpretation += "Elevated ALP & Bilirubin – Possible cholestatic pattern.<br>";
+  }
+
+  if (albumin < 35) {
+    interpretation += "Low Albumin – Possible impaired synthetic function.<br>";
+  }
+
+  if (interpretation === "") {
+    interpretation = "LFT values within normal limits.";
+  }
+
+  document.getElementById("lftOutput").innerHTML = `
+    <b>Indirect Bilirubin:</b> ${indirectBili.toFixed(2)} µmol/L<br>
+    <b>Globulin:</b> ${globulin.toFixed(2)} g/L<br><br>
+    <b>Interpretation:</b><br>
+    ${interpretation}
+  `;
 }
 
-function displayHistory() {
-  let history = JSON.parse(localStorage.getItem("lipidHistory")) || [];
-  let historyList = document.getElementById("history");
-  historyList.innerHTML = "";
-  history.forEach(item => {
-    let li = document.createElement("li");
-    li.innerHTML = `<b>${item.name}</b><br>${item.result}`;
-    historyList.appendChild(li);
-  });
+
+// ================= RFT =================
+function calculateEGFR() {
+
+  let creatinine_umol = parseFloat(document.getElementById("creatinine").value);
+  let age = parseFloat(document.getElementById("age").value);
+  let gender = document.getElementById("gender").value;
+
+  if (isNaN(creatinine_umol) || isNaN(age) || !gender) {
+    document.getElementById("rftOutput").innerHTML =
+      "Please enter all RFT values.";
+    return;
+  }
+
+  let scr = creatinine_umol / 88.4;
+
+  let k, a, sexFactor;
+
+  if (gender === "female") {
+    k = 0.7;
+    a = -0.329;
+    sexFactor = 1.018;
+  } else {
+    k = 0.9;
+    a = -0.411;
+    sexFactor = 1;
+  }
+
+  let raceFactor = 1.159;
+
+  let minPart = Math.min(scr / k, 1);
+  let maxPart = Math.max(scr / k, 1);
+
+  let eGFR = 141 *
+    Math.pow(minPart, a) *
+    Math.pow(maxPart, -1.209) *
+    Math.pow(0.993, age) *
+    sexFactor *
+    raceFactor;
+
+  let stage;
+
+  if (eGFR >= 90) stage = "Normal Kidney Function";
+  else if (eGFR >= 60) stage = "Mild Decrease (Stage 2)";
+  else if (eGFR >= 45) stage = "Stage 3A CKD";
+  else if (eGFR >= 30) stage = "Stage 3B CKD";
+  else if (eGFR >= 15) stage = "Stage 4 CKD";
+  else stage = "Stage 5 CKD (Kidney Failure)";
+
+  document.getElementById("rftOutput").innerHTML = `
+    <b>eGFR:</b> ${eGFR.toFixed(2)} mL/min/1.73m²<br>
+    <b>CKD Stage:</b> ${stage}
+  `;
 }
 
-displayHistory();
 </script>
 
 </body>
